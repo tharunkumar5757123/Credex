@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { saveLead } from '../services/api.js';
 
-export default function LeadCapture({ isOpen, onClose, audit, shareId, teamSize }) {
+export default function LeadCapture({ isOpen, onClose, audit, shareId, teamSize, saveStatus, referralCode }) {
   const [form, setForm] = useState({
     email: '',
     company: '',
@@ -11,8 +11,14 @@ export default function LeadCapture({ isOpen, onClose, audit, shareId, teamSize 
 
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [userReferralCode, setUserReferralCode] = useState('');
+  const [referralCredits, setReferralCredits] = useState(0);
+  const statusMessage = saveStatus || status;
 
   if (!isOpen) return null;
+
+  const publicUrl = shareId ? `${window.location.origin}/audit/${shareId}` : null;
 
   const submitLead = async (event) => {
     event.preventDefault();
@@ -23,14 +29,21 @@ export default function LeadCapture({ isOpen, onClose, audit, shareId, teamSize 
     setStatus('Saving...');
 
     try {
-      await saveLead({
+      const response = await saveLead({
         ...form,
         teamSize,
         auditShareId: shareId,
         totalMonthlySavings: audit?.totalMonthlySavings || 0,
+        referralCode,
       });
 
       setStatus('Saved successfully. Check your inbox if email is enabled.');
+
+      // Set referral information from response
+      if (response.lead?.referralCode) {
+        setUserReferralCode(response.lead.referralCode);
+        setReferralCredits(response.lead.referralCredits || 0);
+      }
 
       // reset form after success
       setForm({
@@ -46,8 +59,20 @@ export default function LeadCapture({ isOpen, onClose, audit, shareId, teamSize 
     }
   };
 
+  const copyLink = async () => {
+    if (!publicUrl || !navigator.clipboard) return;
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 px-4 py-8 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-8 backdrop-blur-md">
       <div className="w-full max-w-md animate-scale-in rounded-lg border border-white/70 bg-white/90 p-6 shadow-2xl shadow-slate-950/20 ring-1 ring-slate-900/5 backdrop-blur-xl sm:p-8">
 
         <p className="eyebrow">Export report</p>
@@ -60,11 +85,50 @@ export default function LeadCapture({ isOpen, onClose, audit, shareId, teamSize 
           Get the audit link and let Credex follow up if the savings case is strong.
         </p>
 
+        {statusMessage ? (
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            {statusMessage}
+          </div>
+        ) : null}
+
         {shareId && (
-          <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            Public report:{' '}
-            <span className="font-semibold">/audit/{shareId}</span>
-          </p>
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <p className="font-semibold text-slate-800">Public report</p>
+            <p className="mt-2 break-words text-sm leading-6 text-slate-700">{publicUrl}</p>
+            <button
+              type="button"
+              onClick={copyLink}
+              className="mt-3 inline-flex items-center rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-teal-700"
+            >
+              {copied ? 'Copied!' : 'Copy link'}
+            </button>
+          </div>
+        )}
+
+        {userReferralCode && (
+          <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            <p className="font-semibold text-green-800">🎉 Your referral program</p>
+            <p className="mt-2 text-sm leading-6">
+              Share this code with friends: <strong>{userReferralCode}</strong>
+            </p>
+            <p className="mt-1 text-xs">
+              Earn 5 credits for each successful referral. You have {referralCredits} credits.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const referralUrl = `${window.location.origin}?ref=${userReferralCode}`;
+                  navigator.clipboard.writeText(referralUrl);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="inline-flex items-center rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-green-700"
+              >
+                {copied ? 'Copied!' : 'Copy referral link'}
+              </button>
+            </div>
+          </div>
         )}
 
         <form className="mt-6 grid gap-4" onSubmit={submitLead}>

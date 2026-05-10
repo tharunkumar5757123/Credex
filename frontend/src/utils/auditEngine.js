@@ -58,6 +58,9 @@ export function runAudit(input, pricing) {
   const totalCurrentMonthly = results.reduce((sum, item) => sum + item.currentSpend, 0);
   const totalOptimizedMonthly = results.reduce((sum, item) => sum + item.recommendedSpend, 0);
 
+  // Calculate benchmark metrics
+  const benchmarkMetrics = calculateBenchmarkMetrics(input, totalCurrentMonthly);
+
   return {
     totalCurrentMonthly,
     totalOptimizedMonthly,
@@ -65,6 +68,7 @@ export function runAudit(input, pricing) {
     totalAnnualSavings: totalMonthlySavings * 12,
     summary: buildFallbackSummary(input, totalMonthlySavings),
     results,
+    benchmarkMetrics,
   };
 }
 
@@ -393,6 +397,32 @@ function getMappingCorrectnessScore(toolPricing, planType) {
   }
 
   return { score: 55, reason: 'Tool mapping: billing rule required fallback interpretation.' };
+}
+
+function calculateBenchmarkMetrics(input, totalCurrentMonthly) {
+  const teamSize = input.teamSize;
+  const spendPerDeveloper = teamSize > 0 ? totalCurrentMonthly / teamSize : 0;
+
+  // Industry averages based on team size (rough estimates)
+  let industryAverage;
+  if (teamSize <= 5) {
+    industryAverage = 150; // Small teams
+  } else if (teamSize <= 20) {
+    industryAverage = 200; // Medium teams
+  } else if (teamSize <= 50) {
+    industryAverage = 300; // Large teams
+  } else {
+    industryAverage = 400; // Enterprise teams
+  }
+
+  const comparison = spendPerDeveloper > industryAverage ? 'above' : 'below';
+
+  return {
+    spendPerDeveloper: Math.round(spendPerDeveloper),
+    industryAverage,
+    comparison,
+    teamSizeCategory: teamSize <= 5 ? 'small' : teamSize <= 20 ? 'medium' : teamSize <= 50 ? 'large' : 'enterprise'
+  };
 }
 
 function buildConfidenceReasons(confidence) {

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { randomUUID } from 'node:crypto';
 import Lead from '../models/Lead.js';
 
 const rateLimit = new Map();
@@ -15,6 +16,7 @@ export async function saveLead(req, res) {
       auditShareId,
       totalMonthlySavings = 0,
       website,
+      referralCode, // referral code used by this lead
     } = req.body;
 
     // 🚨 simple bot/spam trap
@@ -46,6 +48,48 @@ export async function saveLead(req, res) {
 
     rateLimit.set(ip, [...recentHits, now]);
 
+    // ⚠️ DB fallback mode
+    if (mongoose.connection.readyState !== 1) {
+      return res.json({
+        success: true,
+        persisted: false,
+        message: 'Lead received, but MongoDB is not connected.',
+        lead: {
+          email: email.toLowerCase().trim(),
+          company,
+          role,
+          teamSize: Number(teamSize || 0),
+          auditShareId,
+          totalMonthlySavings: Number(totalMonthlySavings || 0),
+          highSavings: Number(totalMonthlySavings || 0) > 500,
+        },
+      });
+    }
+
+    // Handle referral tracking
+    let referredBy = null;
+    let referralCreditsEarned = 0;
+
+    if (referralCode) {
+      const referrer = await Lead.findOne({ referralCode });
+      if (referrer) {
+        referredBy = referralCode;
+        // Award credits to referrer (5 credits for each successful referral)
+        referralCreditsEarned = 5;
+        await Lead.findByIdAndUpdate(referrer._id, {
+          $inc: { referralCount: 1, referralCredits: referralCreditsEarned }
+        });
+      }
+    }
+
+    // Generate unique referral code for this lead
+    let newReferralCode;
+    let attempts = 0;
+    do {
+      newReferralCode = randomUUID().slice(0, 8).toUpperCase();
+      attempts++;
+    } while (attempts < 10 && await Lead.findOne({ referralCode: newReferralCode }));
+
     // 📦 lead object
     const lead = {
       email: email.toLowerCase().trim(),
@@ -55,17 +99,9 @@ export async function saveLead(req, res) {
       auditShareId,
       totalMonthlySavings: Number(totalMonthlySavings || 0),
       highSavings: Number(totalMonthlySavings || 0) > 500,
+      referralCode: newReferralCode,
+      referredBy,
     };
-
-    // ⚠️ DB fallback mode
-    if (mongoose.connection.readyState !== 1) {
-      return res.json({
-        success: true,
-        persisted: false,
-        message: 'Lead received, but MongoDB is not connected.',
-        lead,
-      });
-    }
 
     const savedLead = await Lead.create(lead);
 
@@ -73,7 +109,10 @@ export async function saveLead(req, res) {
       success: true,
       persisted: true,
       message: 'Lead saved successfully.',
-      lead: savedLead,
+      lead: {
+        ...savedLead.toObject(),
+        referralCreditsEarned,
+      },
     });
   } catch (error) {
     return res.status(500).json({

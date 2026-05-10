@@ -1,4 +1,5 @@
 import SummaryCard from './SummaryCard.jsx';
+import { exportAuditToPDF } from '../utils/pdfExport.js';
 
 const toolTypeLabels = {
   api: 'API usage tool',
@@ -6,13 +7,31 @@ const toolTypeLabels = {
   seat: 'Seat-based tool',
 };
 
-export default function Results({ audit, saveStatus, aiStatus, onCapture, onGenerateExplanation }) {
+export default function Results({
+  audit,
+  input,
+  saveStatus,
+  aiStatus,
+  onCapture,
+  onGenerateExplanation,
+  showCaptureButton = true,
+  showGenerateButton = true,
+}) {
   const insight =
     audit.totalMonthlySavings >= 500
       ? 'Credex can help capture more of this through discounted AI credits.'
       : audit.totalMonthlySavings < 100
         ? "You're spending well. Keep a watchlist for future optimizations."
         : 'There is useful savings potential without a full stack migration.';
+
+  const handlePDFExport = async () => {
+    try {
+      await exportAuditToPDF(audit, input);
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      // Could add error handling UI here
+    }
+  };
 
   return (
     <section className="premium-panel animate-fade-up p-5 [animation-delay:90ms] sm:p-6 lg:sticky lg:top-6 lg:p-7">
@@ -33,6 +52,16 @@ export default function Results({ audit, saveStatus, aiStatus, onCapture, onGene
       <p className="mb-5 rounded-lg border border-teal-200/80 bg-teal-50/80 px-4 py-3 text-sm font-medium leading-6 text-teal-950 shadow-inner-soft">
         {insight}
       </p>
+
+      {audit.benchmarkMetrics && (
+        <div className="mb-6 rounded-lg border border-blue-200/80 bg-blue-50/80 px-4 py-4 shadow-inner-soft">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">Benchmark comparison</p>
+          <p className="mt-2 text-sm leading-6 text-blue-950">
+            Your AI spend per developer is <strong>${audit.benchmarkMetrics.spendPerDeveloper}</strong> — {audit.benchmarkMetrics.teamSizeCategory} companies your size average <strong>${audit.benchmarkMetrics.industryAverage}</strong>.
+            {audit.benchmarkMetrics.comparison === 'above' ? ' Consider optimizing your AI stack.' : ' You\'re spending efficiently!'}
+          </p>
+        </div>
+      )}
       <div className="mb-6 rounded-lg border border-slate-200 bg-white/80 px-4 py-4 shadow-inner-soft">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Audit methodology</p>
         <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
@@ -51,13 +80,15 @@ export default function Results({ audit, saveStatus, aiStatus, onCapture, onGene
               {audit.aiExplanation?.narrative || 'Generate a plain-English executive summary with Hugging Face.'}
             </p>
           </div>
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
-            onClick={onGenerateExplanation}
-          >
-            Generate
-          </button>
+          {showGenerateButton ? (
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+              onClick={onGenerateExplanation}
+            >
+              Generate
+            </button>
+          ) : null}
         </div>
         {audit.aiExplanation ? (
           <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -161,13 +192,24 @@ export default function Results({ audit, saveStatus, aiStatus, onCapture, onGene
         ))}
       </div>
 
-      <button
-        type="button"
-        className="mt-7 inline-flex w-full items-center justify-center rounded-lg bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-300/70 transition duration-300 hover:-translate-y-0.5 hover:bg-teal-700 hover:shadow-teal-200"
-        onClick={onCapture}
-      >
-        Export Report
-      </button>
+      {showCaptureButton ? (
+        <div className="mt-7 flex gap-3">
+          <button
+            type="button"
+            className="inline-flex flex-1 items-center justify-center rounded-lg bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-300/70 transition duration-300 hover:-translate-y-0.5 hover:bg-teal-700 hover:shadow-teal-200"
+            onClick={onCapture}
+          >
+            Export Report
+          </button>
+          <button
+            type="button"
+            className="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+            onClick={handlePDFExport}
+          >
+            Download PDF
+          </button>
+        </div>
+      ) : null}
       {saveStatus ? <p className="mt-3 text-sm text-slate-500">{saveStatus}</p> : null}
     </section>
   );

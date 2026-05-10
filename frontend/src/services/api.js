@@ -1,3 +1,5 @@
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://credex-j2dy.onrender.com/api';
 
 /**
@@ -43,6 +45,21 @@ export async function explainAudit(input, audit) {
     return data;
   } catch (error) {
     throw new Error(error.message || 'AI explanation request failed');
+  }
+}
+
+export async function fetchSharedAudit(shareId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/audit/${shareId}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.error || 'Unable to fetch shared audit');
+    }
+
+    return data;
+  } catch (error) {
+    throw new Error(error.message || 'Network error while fetching shared audit');
   }
 }
 

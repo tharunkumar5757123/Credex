@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credex AI Spend Widget</title>
+    <style>
+        .credex-widget {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .credex-widget-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .credex-widget-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0 0 8px 0;
+        }
+
+        .credex-widget-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .credex-widget-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .credex-widget-metric {
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .credex-widget-metric-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .credex-widget-metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .credex-widget-cta {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .credex-widget-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #0f172a;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .credex-widget-button:hover {
+            background: #1e293b;
+        }
+
+        .credex-widget-footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div id="credex-widget-root"></div>
+
+    <script>
+        // Widget configuration - can be customized by embedder
+        window.CredexWidgetConfig = window.CredexWidgetConfig || {
+            teamSize: 10,
+            monthlySpend: 2500,
+            savings: 750,
+            primaryUseCase: 'Software Development',
+            showCTA: true
+        };
+
+        function renderCredexWidget() {
+            const config = window.CredexWidgetConfig;
+            const root = document.getElementById('credex-widget-root');
+
+            const widget = document.createElement('div');
+            widget.className = 'credex-widget';
+
+            widget.innerHTML = `
+                <div class="credex-widget-header">
+                    <h3 class="credex-widget-title">AI Spend Audit Results</h3>
+                    <p class="credex-widget-subtitle">Powered by Credex AI Cost Optimization</p>
+                </div>
+
+                <div class="credex-widget-metrics">
+                    <div class="credex-widget-metric">
+                        <div class="credex-widget-metric-label">Team Size</div>
+                        <div class="credex-widget-metric-value">${config.teamSize}</div>
+                    </div>
+                    <div class="credex-widget-metric">
+                        <div class="credex-widget-metric-label">Monthly Savings</div>
+                        <div class="credex-widget-metric-value">$${config.savings.toLocaleString()}</div>
+                    </div>
+                    <div class="credex-widget-metric">
+                        <div class="credex-widget-metric-label">Current Spend</div>
+                        <div class="credex-widget-metric-value">$${config.monthlySpend.toLocaleString()}</div>
+                    </div>
+                    <div class="credex-widget-metric">
+                        <div class="credex-widget-metric-label">Optimized Spend</div>
+                        <div class="credex-widget-metric-value">$${(config.monthlySpend - config.savings).toLocaleString()}</div>
+                    </div>
+                </div>
+
+                ${config.showCTA ? `
+                <div class="credex-widget-cta">
+                    <a href="https://credex.ai/audit?ref=widget" class="credex-widget-button" target="_blank">
+                        Get Your Free AI Audit
+                    </a>
+                </div>
+                ` : ''}
+
+                <div class="credex-widget-footer">
+                    Optimize your AI stack with Credex
+                </div>
+            `;
+
+            root.appendChild(widget);
+        }
+
+        // Render widget when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', renderCredexWidget);
+        } else {
+            renderCredexWidget();
+        }
+    </script>
+</body>
+</html>

@@ -7,7 +7,7 @@ import { pricingData } from '../utils/pricingData.js';
 import { runAudit } from '../utils/auditEngine.js';
 import { explainAudit, saveAudit } from '../services/api.js';
 
-export default function Home() {
+export default function Home({ referralCode }) {
   const [input, setInput] = useState(() => {
     const stored = window.localStorage.getItem('credex-audit-input');
     return stored ? JSON.parse(stored) : initialForm;
@@ -84,15 +84,14 @@ export default function Home() {
 
   // 💾 SAVE REPORT
   const captureReport = async () => {
+    setIsCaptureOpen(true);
     setSaveStatus('Saving report...');
     try {
       const response = await saveAudit(input, displayAudit);
       setSavedAudit(response.audit);
-      setIsCaptureOpen(true);
-      setSaveStatus('');
+      setSaveStatus('Public link generated. Copy it below or send the audit.');
     } catch (error) {
       setSavedAudit(null);
-      setIsCaptureOpen(true);
       setSaveStatus(
         'MongoDB save failed. You can still capture the lead locally.'
       );
@@ -161,6 +160,7 @@ export default function Home() {
 
           <Results
             audit={displayAudit}
+            input={input}
             saveStatus={saveStatus}
             aiStatus={aiStatus}
             onCapture={captureReport}
@@ -175,6 +175,8 @@ export default function Home() {
         audit={savedAudit?.audit || displayAudit}
         shareId={savedAudit?.shareId}
         teamSize={input.teamSize}
+        saveStatus={saveStatus}
+        referralCode={referralCode || localStorage.getItem('credex-referral')}
       />
     </div>
   );

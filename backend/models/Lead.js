@@ -42,6 +42,30 @@ const LeadSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // Referral system
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+
+    referredBy: {
+      type: String, // referral code of the referrer
+      index: true,
+      default: null,
+    },
+
+    referralCount: {
+      type: Number,
+      default: 0,
+    },
+
+    referralCredits: {
+      type: Number,
+      default: 0, // credits earned from referrals
+    },
   },
   { timestamps: true }
 );
