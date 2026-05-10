@@ -8,5 +8,8 @@
     "build": "vite build --config ../vite.config.js",
     "preview": "vite preview --config ../vite.config.js",
     "test": "vitest run --config ../vite.config.js"
+  },
+  "devDependencies": {
+    "vite": "^8.0.11"
   }
 }
