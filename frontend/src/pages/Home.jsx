@@ -35,7 +35,6 @@ export default function Home({ referralCode }) {
     setAiStatus('');
   }, [input]);
 
-  // ✅ UPDATE TOOL
   const updateTool = (index, field, value) => {
     setInput((prev) => {
       const next = { ...prev, tools: [...prev.tools] };
